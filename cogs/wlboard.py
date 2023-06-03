@@ -1,3 +1,4 @@
+import discord
 from discord.ext import commands
 import aiosqlite
 import asyncio
@@ -23,7 +24,12 @@ class wlboard(commands.Cog):
 
     @setup.command()
     @commands.has_permissions(manage_guild=True)
-    async
+    async def channel(self, ctx, channel: discord.TextChannel):
+        async with self.bot.db.cursor() as cursor:
+            await cursor.execute("SELECT channel FROM wlSetup WHERE guild = ?", (ctx.guild.id,))
+            channelData = await cursor.fetchone()
+            if channelData:
+                channelData = channelData[0]
 
 
     @commands.command()

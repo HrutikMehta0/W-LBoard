@@ -21,21 +21,38 @@ class wlboard(commands.Cog):
     async def on_raw_reaction_add(self, payload):
         emoji = payload.emoji
         guild = self.bot.get_guild(payload.guild_id)
-        channel = await guild.get_channel(payload.channel_id)
-        message = await channel.get_message(payload.message_id)
-
+        channel = guild.get_channel(payload.channel_id)
+        message = await channel.fetch_message(payload.message_id)
+        print("Reaction Added")
         if emoji.name == "🇼":
-            print('Hello')
             async with self.bot.db.cursor() as cursor:
                 await cursor.execute("SELECT wlLimit FROM wlSetup WHERE guild = ?", (guild.id,))
                 wlLimit = await cursor.fetchone()
+                await cursor.execute("SELECT channel FROM wlSetup WHERE guild = ?", (guild.id,))
+                channelTest = await cursor.fetchone()
                 if wlLimit:
                     wlLimit = wlLimit[0]
-                    channelData = await guild.get_channel(wlLimit[1])
+                    channelData = guild.get_channel(channelTest[0])
+                    print(channelData)
                     for reaction in message.reactions:
                         if reaction.emoji == "🇼":
                             if reaction.count >= wlLimit:
                                 embed = discord.Embed(title="New W", description=f"{message.content}")
+                                await channelData.send(embed=embed)
+        elif emoji.name == "🇱":
+            async with self.bot.db.cursor() as cursor:
+                await cursor.execute("SELECT wlLimit FROM wlSetup WHERE guild = ?", (guild.id,))
+                wlLimit = await cursor.fetchone()
+                await cursor.execute("SELECT channel FROM wlSetup WHERE guild = ?", (guild.id,))
+                channelTest = await cursor.fetchone()
+                if wlLimit:
+                    wlLimit = wlLimit[0]
+                    channelData = guild.get_channel(channelTest[0])
+                    print(channelData)
+                    for reaction in message.reactions:
+                        if reaction.emoji == "🇱":
+                            if reaction.count >= wlLimit:
+                                embed = discord.Embed(title="New L", description=f"{message.content}")
                                 await channelData.send(embed=embed)
         else:
             print("Nope")
@@ -71,7 +88,7 @@ class wlboard(commands.Cog):
             if wlData:
                 wlData = wlData[0]
                 if wlData == wl:
-                    return await ctx.send("This channel is already the WL Limit")
+                    return await ctx.send(f"This {wlData} is already the WL Limit")
                 await cursor.execute("UPDATE wlSetup SET wlLimit = ? WHERE guild = ?", (wl, ctx.guild.id))
                 await ctx.send(f"Set WL Limit to {wl}")
             else:

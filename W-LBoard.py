@@ -20,7 +20,6 @@ async def load():
 
 async def main():
     await load()
-    print(os.getenv('token'))
     await bot.start(os.getenv('TOKEN'))
 
 

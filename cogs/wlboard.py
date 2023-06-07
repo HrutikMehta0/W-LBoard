@@ -23,6 +23,7 @@ class wlboard(commands.Cog):
         guild = self.bot.get_guild(payload.guild_id)
         channel = guild.get_channel(payload.channel_id)
         message = await channel.fetch_message(payload.message_id)
+        wls = 0
         print("Reaction Added")
         if emoji.name == "🇼":
             async with self.bot.db.cursor() as cursor:
@@ -33,12 +34,21 @@ class wlboard(commands.Cog):
                 if wlLimit:
                     wlLimit = wlLimit[0]
                     channelData = guild.get_channel(channelTest[0])
-                    print(channelData)
                     for reaction in message.reactions:
                         if reaction.emoji == "🇼":
+                            wls += 1
                             if reaction.count >= wlLimit:
-                                embed = discord.Embed(title="New W", description=f"{message.content}")
-                                await channelData.send(embed=embed)
+                                embed = discord.Embed(title="New W", color=message.author.color,
+                                                      timestamp=message.created_at)
+                                fields = [("Author", message.author.mention, False),
+                                          ("",message.content, False)]
+                                for name, value, inline in fields:
+                                    print(name, value, inline)
+                                    embed.add_field(name=name, value=value, inline=inline)
+                                if len(message.attachments):
+                                    embed.set_image(url=message.attachments[0].url)
+                                await channelData.send(f"**{reaction.count}** 🇼 | {channel}", embed=embed)
+                                print("Sent")
         elif emoji.name == "🇱":
             async with self.bot.db.cursor() as cursor:
                 await cursor.execute("SELECT wlLimit FROM wlSetup WHERE guild = ?", (guild.id,))
@@ -48,14 +58,22 @@ class wlboard(commands.Cog):
                 if wlLimit:
                     wlLimit = wlLimit[0]
                     channelData = guild.get_channel(channelTest[0])
-                    print(channelData)
                     for reaction in message.reactions:
                         if reaction.emoji == "🇱":
+                            wls -= 1
                             if reaction.count >= wlLimit:
                                 embed = discord.Embed(title="New L", description=f"{message.content}")
+                                if len(message.attachments):
+                                    embed.set_image(url=message.attachments[0].url)
                                 await channelData.send(embed=embed)
         else:
             print("Nope")
+        # if wls < 0:
+        #     embed = discord.Embed(title="New L", description=f"{message.content}")
+        #     await channelData.send(embed=embed)
+        # elif wls > 0:
+        #     embed = discord.Embed(title="New W", description=f"{message.content}")
+        #     await channelData.send(embed=embed)
 
     @commands.group(pass_context=True)
     async def setup(self, ctx):

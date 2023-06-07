@@ -7,6 +7,8 @@ import asyncio
 class wlboard(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.w = 0
+        self.l = 0
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -23,7 +25,7 @@ class wlboard(commands.Cog):
         guild = self.bot.get_guild(payload.guild_id)
         channel = guild.get_channel(payload.channel_id)
         message = await channel.fetch_message(payload.message_id)
-        wls = 0
+        User = await self.bot.fetch_user(message.author.id)
         print("Reaction Added")
         if emoji.name == "🇼":
             async with self.bot.db.cursor() as cursor:
@@ -36,19 +38,7 @@ class wlboard(commands.Cog):
                     channelData = guild.get_channel(channelTest[0])
                     for reaction in message.reactions:
                         if reaction.emoji == "🇼":
-                            wls += 1
-                            if reaction.count >= wlLimit:
-                                embed = discord.Embed(title="New W", color=message.author.color,
-                                                      timestamp=message.created_at)
-                                fields = [("Author", message.author.mention, False),
-                                          ("",message.content, False)]
-                                for name, value, inline in fields:
-                                    print(name, value, inline)
-                                    embed.add_field(name=name, value=value, inline=inline)
-                                if len(message.attachments):
-                                    embed.set_image(url=message.attachments[0].url)
-                                await channelData.send(f"**{reaction.count}** 🇼 | {channel}", embed=embed)
-                                print("Sent")
+                            self.w += 1
         elif emoji.name == "🇱":
             async with self.bot.db.cursor() as cursor:
                 await cursor.execute("SELECT wlLimit FROM wlSetup WHERE guild = ?", (guild.id,))
@@ -60,20 +50,42 @@ class wlboard(commands.Cog):
                     channelData = guild.get_channel(channelTest[0])
                     for reaction in message.reactions:
                         if reaction.emoji == "🇱":
-                            wls -= 1
-                            if reaction.count >= wlLimit:
-                                embed = discord.Embed(title="New L", description=f"{message.content}")
-                                if len(message.attachments):
-                                    embed.set_image(url=message.attachments[0].url)
-                                await channelData.send(embed=embed)
+                            self.l += 1
         else:
             print("Nope")
-        # if wls < 0:
-        #     embed = discord.Embed(title="New L", description=f"{message.content}")
-        #     await channelData.send(embed=embed)
-        # elif wls > 0:
-        #     embed = discord.Embed(title="New W", description=f"{message.content}")
-        #     await channelData.send(embed=embed)
+        if self.w - self.l < 0:
+            embed = discord.Embed(title="", color=0xf1415f,
+                                  timestamp=message.created_at)
+            embed.set_author(name=message.author.display_name, icon_url=User.avatar)
+            fields = [("", message.content, False)]
+            for name, value, inline in fields:
+                embed.add_field(name=name, value=value, inline=inline)
+            if len(message.attachments):
+                embed.set_image(url=message.attachments[0].url)
+            await channelData.send(
+                f"**{reaction.count}** :regional_indicator_l:| {channel.mention}", embed=embed)
+        elif self.w - self.l > 0:
+            embed = discord.Embed(title="", color=0x5dac61,
+                                  timestamp=message.created_at)
+            embed.set_author(name=message.author.display_name, icon_url=User.avatar)
+            fields = [("", message.content, False)]
+            for name, value, inline in fields:
+                embed.add_field(name=name, value=value, inline=inline)
+            if len(message.attachments):
+                embed.set_image(url=message.attachments[0].url)
+            await channelData.send(
+                f"**{reaction.count}** 🇼 | {channel.mention}", embed=embed)
+        elif self.w - self.l == 0:
+            embed = discord.Embed(title="", color=discord.Color.light_grey(),
+                                  timestamp=message.created_at)
+            embed.set_author(name=message.author.display_name, icon_url=User.avatar)
+            fields = [("", message.content, False)]
+            for name, value, inline in fields:
+                embed.add_field(name=name, value=value, inline=inline)
+            if len(message.attachments):
+                embed.set_image(url=message.attachments[0].url)
+            await channelData.send(
+                f"**{wlLimit}** 🇼s | **{wlLimit}** :regional_indicator_l:s  | {channel.mention}", embed=embed)
 
     @commands.group(pass_context=True)
     async def setup(self, ctx):

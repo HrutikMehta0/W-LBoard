@@ -1,9 +1,10 @@
 import discord
+from discord import ButtonStyle
+from discord.utils.manage_components import create_actionrow
+from discord_slash.utils.manage_components import create_button, create_actionrow
 from discord.ext import commands
 import aiosqlite
 import asyncio
-from discord_slash.utils.manage_components import create_button, create_actionrow
-from discord_slash.model import ButtonStyle
 
 class messageLinkButton(discord.ui.Button):
     def __init__(self, url):
@@ -27,38 +28,25 @@ class wlboard(commands.Cog):
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
-        emoji = payload.emoji
         guild = self.bot.get_guild(payload.guild_id)
         channel = guild.get_channel(payload.channel_id)
         message = await channel.fetch_message(payload.message_id)
         User = await self.bot.fetch_user(message.author.id)
         print("Reaction Added")
-        if emoji.name == "🇼":
-            async with self.bot.db.cursor() as cursor:
-                await cursor.execute("SELECT wlLimit FROM wlSetup WHERE guild = ?", (guild.id,))
-                wlLimit = await cursor.fetchone()
-                await cursor.execute("SELECT channel FROM wlSetup WHERE guild = ?", (guild.id,))
-                channelTest = await cursor.fetchone()
-                if wlLimit:
-                    wlLimit = wlLimit[0]
-                    channelData = guild.get_channel(channelTest[0])
-                    for reaction in message.reactions:
-                        if reaction.emoji == "🇼":
-                            self.w += 1
-        elif emoji.name == "🇱":
-            async with self.bot.db.cursor() as cursor:
-                await cursor.execute("SELECT wlLimit FROM wlSetup WHERE guild = ?", (guild.id,))
-                wlLimit = await cursor.fetchone()
-                await cursor.execute("SELECT channel FROM wlSetup WHERE guild = ?", (guild.id,))
-                channelTest = await cursor.fetchone()
-                if wlLimit:
-                    wlLimit = wlLimit[0]
-                    channelData = guild.get_channel(channelTest[0])
-                    for reaction in message.reactions:
-                        if reaction.emoji == "🇱":
-                            self.l += 1
-        else:
-            print("Nope")
+        async with self.bot.db.cursor() as cursor:
+            await cursor.execute("SELECT wlLimit FROM wlSetup WHERE guild = ?", (guild.id,))
+            wlLimit = await cursor.fetchone()
+            await cursor.execute("SELECT channel FROM wlSetup WHERE guild = ?", (guild.id,))
+            channelTest = await cursor.fetchone()
+            if wlLimit:
+                wlLimit = wlLimit[0]
+                channelData = guild.get_channel(channelTest[0])
+                for reaction in message.reactions:
+                    if reaction.emoji == "🇼":
+                        self.w += 1
+                    elif reaction.emoji == "🇱":
+                        self.l += 1
+        buttons = [create_button(style=ButtonStyle.grey, label="original message")]
         if self.w - self.l < 0:
             embed = discord.Embed(title="", color=0xf1415f,
                                   timestamp=message.created_at)

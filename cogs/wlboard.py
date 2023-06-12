@@ -2,6 +2,12 @@ import discord
 from discord.ext import commands
 import aiosqlite
 import asyncio
+from discord_slash.utils.manage_components import create_button, create_actionrow
+from discord_slash.model import ButtonStyle
+
+class messageLinkButton(discord.ui.Button):
+    def __init__(self, url):
+        super().__init__(style=discord.ButtonStyle.link, url=url, label="Message Link")
 
 
 class wlboard(commands.Cog):
@@ -56,7 +62,7 @@ class wlboard(commands.Cog):
         if self.w - self.l < 0:
             embed = discord.Embed(title="", color=0xf1415f,
                                   timestamp=message.created_at)
-            embed.set_author(name=message.author.display_name, icon_url=User.avatar)
+            embed.set_author(name=message.author.display_name, icon_url=User.avatar, url=message.jump_url)
             fields = [("", message.content, False)]
             for name, value, inline in fields:
                 embed.add_field(name=name, value=value, inline=inline)
@@ -67,7 +73,7 @@ class wlboard(commands.Cog):
         elif self.w - self.l > 0:
             embed = discord.Embed(title="", color=0x5dac61,
                                   timestamp=message.created_at)
-            embed.set_author(name=message.author.display_name, icon_url=User.avatar)
+            embed.set_author(name=message.author.display_name, icon_url=User.avatar, url=message.jump_url)
             fields = [("", message.content, False)]
             for name, value, inline in fields:
                 embed.add_field(name=name, value=value, inline=inline)
@@ -78,7 +84,7 @@ class wlboard(commands.Cog):
         elif self.w - self.l == 0:
             embed = discord.Embed(title="", color=discord.Color.light_grey(),
                                   timestamp=message.created_at)
-            embed.set_author(name=message.author.display_name, icon_url=User.avatar)
+            embed.set_author(name=message.author.display_name, icon_url=User.avatar, url=message.jump_url)
             fields = [("", message.content, False)]
             for name, value, inline in fields:
                 embed.add_field(name=name, value=value, inline=inline)

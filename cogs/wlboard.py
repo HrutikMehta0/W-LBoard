@@ -1,10 +1,9 @@
 import discord
 from discord import ButtonStyle
-from discord.utils.manage_components import create_actionrow
-from discord_slash.utils.manage_components import create_button, create_actionrow
 from discord.ext import commands
 import aiosqlite
 import asyncio
+
 
 class messageLinkButton(discord.ui.Button):
     def __init__(self, url):
@@ -38,15 +37,13 @@ class wlboard(commands.Cog):
             wlLimit = await cursor.fetchone()
             await cursor.execute("SELECT channel FROM wlSetup WHERE guild = ?", (guild.id,))
             channelTest = await cursor.fetchone()
-            if wlLimit:
-                wlLimit = wlLimit[0]
-                channelData = guild.get_channel(channelTest[0])
-                for reaction in message.reactions:
-                    if reaction.emoji == "🇼":
-                        self.w += 1
-                    elif reaction.emoji == "🇱":
-                        self.l += 1
-        buttons = [create_button(style=ButtonStyle.grey, label="original message")]
+        wlLimit = wlLimit[0]
+        channelData = guild.get_channel(channelTest[0])
+        if ":w_:" in str(payload.emoji):
+            self.w += 1
+        elif ":l_:" in str(payload.emoji):
+            self.l += 1
+
         if self.w - self.l < 0:
             embed = discord.Embed(title="", color=0xf1415f,
                                   timestamp=message.created_at)
@@ -56,8 +53,16 @@ class wlboard(commands.Cog):
                 embed.add_field(name=name, value=value, inline=inline)
             if len(message.attachments):
                 embed.set_image(url=message.attachments[0].url)
-            await channelData.send(
-                f"**{reaction.count}** :regional_indicator_l:| {channel.mention}", embed=embed)
+            if self.l == wlLimit:
+                await channelData.send(
+                    f"**{self.l}** :regional_indicator_l:| {channel.mention}", embed=embed)
+            else:
+                async for mes in channelData.history(limit=200):
+                    if message.content == mes.embeds[0].to_dict()["fields"][0]["value"]:
+                        await mes.edit(
+                            content=f"**{wlLimit}** 🇼s | **{wlLimit}** :regional_indicator_l:s  | {channel.mention}",
+                            embed=embed)
+
         elif self.w - self.l > 0:
             embed = discord.Embed(title="", color=0x5dac61,
                                   timestamp=message.created_at)
@@ -68,8 +73,9 @@ class wlboard(commands.Cog):
             if len(message.attachments):
                 embed.set_image(url=message.attachments[0].url)
             await channelData.send(
-                f"**{reaction.count}** 🇼 | {channel.mention}", embed=embed)
-        elif self.w - self.l == 0:
+                f"**{self.w}** 🇼 | {channel.mention}", embed=embed)
+
+        elif self.w - self.l == 0 and self.w != 0:
             embed = discord.Embed(title="", color=discord.Color.light_grey(),
                                   timestamp=message.created_at)
             embed.set_author(name=message.author.display_name, icon_url=User.avatar, url=message.jump_url)
@@ -78,8 +84,11 @@ class wlboard(commands.Cog):
                 embed.add_field(name=name, value=value, inline=inline)
             if len(message.attachments):
                 embed.set_image(url=message.attachments[0].url)
-            await channelData.send(
-                f"**{wlLimit}** 🇼s | **{wlLimit}** :regional_indicator_l:s  | {channel.mention}", embed=embed)
+            async for mes in channelData.history(limit=200):
+                if message.content == mes.embeds[0].to_dict()["fields"][0]["value"]:
+                    await mes.edit(
+                        content=f"**{wlLimit}** 🇼s | **{wlLimit}** :regional_indicator_l:s  | {channel.mention}",
+                        embed=embed)
 
     @commands.group(pass_context=True)
     async def setup(self, ctx):

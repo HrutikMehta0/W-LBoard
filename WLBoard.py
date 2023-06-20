@@ -1,6 +1,5 @@
 import asyncio
 import os
-
 import discord
 from discord.ext import commands
 
@@ -9,6 +8,7 @@ channels = {'wlboard': 1113648494096420944, 'botSpam': 774440654465269781}
 
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix='-', intents=intents)
+
 
 
 async def load():
@@ -20,7 +20,9 @@ async def load():
 
 async def main():
     await load()
-    await bot.start(os.getenv('TOKEN'))
+    with open('token.txt', 'r') as f:
+        lines = f.readlines()
+    await bot.start(lines[0])
 
 
 asyncio.run(main())

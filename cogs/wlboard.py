@@ -73,21 +73,21 @@ class wlboard(commands.Cog):
                         if message.content == mes.embeds[0].to_dict()["fields"][0]["value"]:
                             if self.w > 0:
                                 await mes.edit(
-                                    content=f"**{self.w}** :w_:s | **{self.l}** :l_:s  | {channel.mention}",
+                                    content=f"**{self.w}** :w_: | **{self.l}** :l_:  | {channel.mention}",
                                     embed=embed)
                                 break
                             else:
                                 await mes.edit(
-                                    content=f"**{self.l}** :l_:s  | {channel.mention}",
+                                    content=f"**{self.l}** :l_:  | {channel.mention}",
                                     embed=embed)
                                 break
                 if self.w > 0:
                     await channelData.send(
-                        content=f"**{self.w}** :w_:s | **{self.l}** :l_:s  | {channel.mention}",
+                        content=f"**{self.w}** :w_: | **{self.l}** :l_:  | {channel.mention}",
                         embed=embed)
                 else:
                     await channelData.send(
-                        content=f"**{self.l}** :l_:s  | {channel.mention}",
+                        content=f"**{self.l}** :l_:  | {channel.mention}",
                         embed=embed)
 
             elif self.w - self.l > 0 and self.w >= wlLimit:
@@ -104,21 +104,21 @@ class wlboard(commands.Cog):
                         if message.content == mes.embeds[0].to_dict()["fields"][0]["value"]:
                             if self.l > 0:
                                 await mes.edit(
-                                    content=f"**{self.w}** :w_:s | **{self.l}** :l_:s  | {channel.mention}",
+                                    content=f"**{self.w}** :w_: | **{self.l}** :l_:  | {channel.mention}",
                                     embed=embed)
                                 break
                             else:
                                 await mes.edit(
-                                    content=f"**{self.l}** :w_:s  | {channel.mention}",
+                                    content=f"**{self.l}** :w_:  | {channel.mention}",
                                     embed=embed)
                                 break
                 if self.l > 0:
                     await channelData.send(
-                        content=f"**{self.w}** :w_:s | **{self.l}** :l_:s  | {channel.mention}",
+                        content=f"**{self.w}** :w_: | **{self.l}** :l_:  | {channel.mention}",
                         embed=embed)
                 else:
                     await channelData.send(
-                        content=f"**{self.w}** :w_:s  | {channel.mention}",
+                        content=f"**{self.w}** :w_:  | {channel.mention}",
                         embed=embed)
 
             elif self.w - self.l == 0 and self.w != 0:
@@ -133,7 +133,7 @@ class wlboard(commands.Cog):
                 async for mes in channelData.history(limit=200):
                     if message.content == mes.embeds[0].to_dict()["fields"][0]["value"]:
                         await mes.edit(
-                            content=f"**{self.w}** :w_:s | **{self.l}** :l_:s  | {channel.mention}",
+                            content=f"**{self.w}** :w_: | **{self.l}** :l_:  | {channel.mention}",
                             embed=embed)
 
     @commands.Cog.listener()
@@ -182,12 +182,12 @@ class wlboard(commands.Cog):
                     if message.content == mes.embeds[0].to_dict()["fields"][0]["value"]:
                         if self.w > 0:
                             await mes.edit(
-                                content=f"**{self.w}** 🇼s | **{self.l}** :regional_indicator_l:s  | {channel.mention}",
+                                content=f"**{self.w}** :w_: | **{self.l}** :l_:  | {channel.mention}",
                                 embed=embed)
                             break
                         else:
                             await mes.edit(
-                                content=f"**{self.l}** :regional_indicator_l:s  | {channel.mention}",
+                                content=f"**{self.l}** :l_:  | {channel.mention}",
                                 embed=embed)
                             break
 
@@ -205,12 +205,12 @@ class wlboard(commands.Cog):
                     if message.content == mes.embeds[0].to_dict()["fields"][0]["value"]:
                         if self.l > 0:
                             await mes.edit(
-                                content=f"**{self.w}** 🇼s | **{self.l}** :regional_indicator_l:s  | {channel.mention}",
+                                content=f"**{self.w}** :w_: | **{self.l}** :l_:  | {channel.mention}",
                                 embed=embed)
                             break
                         else:
                             await mes.edit(
-                                content=f"**{self.l}** 🇼s  | {channel.mention}",
+                                content=f"**{self.l}** :w_:  | {channel.mention}",
                                 embed=embed)
                             break
 
@@ -226,7 +226,7 @@ class wlboard(commands.Cog):
             async for mes in channelData.history(limit=200):
                 if message.content == mes.embeds[0].to_dict()["fields"][0]["value"]:
                     await mes.edit(
-                        content=f"**{self.w}** 🇼s | **{self.l}** :regional_indicator_l:s  | {channel.mention}",
+                        content=f"**{self.w}** :w_: | **{self.l}** :l_:  | {channel.mention}",
                         embed=embed)
 
     @commands.group(pass_context=True)

@@ -16,6 +16,13 @@ class wlboard(commands.Cog):
         self.w = 0
         self.l = 0
 
+    def checkMessageExists(self, channelData, message):
+        async for mes in channelData.history(limit=200):
+            if len(mes.embeds) > 0:
+                if message.content == mes.embeds[0].to_dict()["fields"][0]["value"]:
+                    return True
+        return False
+
     @commands.Cog.listener()
     async def on_ready(self):
         print("Ready")
@@ -43,7 +50,7 @@ class wlboard(commands.Cog):
             if ":w_:" in str(reaction.emoji):
                 self.w = reaction.count
             elif ":l_:" in str(reaction.emoji):
-                self.l = reaction.countw    
+                self.l = reaction.countw
         if not any(":w_:" in str(reaction.emoji) for reaction in message.reactions):
             self.w = 0
         if not any(":l_:" in str(reaction.emoji) for reaction in message.reactions):
@@ -129,7 +136,6 @@ class wlboard(commands.Cog):
                             content=f"**{self.w}** :w_:s | **{self.l}** :l_:s  | {channel.mention}",
                             embed=embed)
 
-
     @commands.Cog.listener()
     async def on_raw_reaction_remove(self, payload):
         guild = self.bot.get_guild(payload.guild_id)
@@ -184,14 +190,6 @@ class wlboard(commands.Cog):
                                 content=f"**{self.l}** :regional_indicator_l:s  | {channel.mention}",
                                 embed=embed)
                             break
-            if self.w > 0:
-                await channelData.send(
-                    content=f"**{self.w}** 🇼s | **{self.l}** :regional_indicator_l:s  | {channel.mention}",
-                    embed=embed)
-            else:
-                await channelData.send(
-                    content=f"**{self.l}** :regional_indicator_l:s  | {channel.mention}",
-                    embed=embed)
 
         elif self.w - self.l > 0 and self.w >= wlLimit:
             embed = discord.Embed(title="", color=0x5dac61,
@@ -215,14 +213,6 @@ class wlboard(commands.Cog):
                                 content=f"**{self.l}** 🇼s  | {channel.mention}",
                                 embed=embed)
                             break
-            if self.l > 0:
-                await channelData.send(
-                    content=f"**{self.w}** 🇼s | **{self.l}** :regional_indicator_l:s  | {channel.mention}",
-                    embed=embed)
-            else:
-                await channelData.send(
-                    content=f"**{self.w}** 🇼s  | {channel.mention}",
-                    embed=embed)
 
         elif self.w - self.l == 0 and self.w != 0:
             embed = discord.Embed(title="", color=discord.Color.light_grey(),
@@ -238,8 +228,6 @@ class wlboard(commands.Cog):
                     await mes.edit(
                         content=f"**{self.w}** 🇼s | **{self.l}** :regional_indicator_l:s  | {channel.mention}",
                         embed=embed)
-
-
 
     @commands.group(pass_context=True)
     async def setup(self, ctx):

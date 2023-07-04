@@ -18,12 +18,12 @@ class wlboard(commands.Cog):
         self.wemoji = None
         self.lemoji = None
 
-    # def checkMessageExists(self, channelData, message):
-    #     async for mes in channelData.history(limit=200):
-    #         if len(mes.embeds) > 0:
-    #             if message.content == mes.embeds[0].to_dict()["fields"][0]["value"]:
-    #                 return True
-    #     return False
+    async def checkMessageExists(self, channelData, message):
+        async for mes in channelData.history(limit=200):
+            if len(mes.embeds) > 0:
+                if message.content == mes.embeds[0].to_dict()["fields"][0]["value"]:
+                    return True
+        return False
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -52,10 +52,12 @@ class wlboard(commands.Cog):
             if ":w_:" in str(reaction.emoji):
                 if self.wemoji is None:
                     self.wemoji = reaction.emoji
+                    print(self.wemoji)
                 self.w = reaction.count
             elif ":l_:" in str(reaction.emoji):
                 if self.lemoji is None:
                     self.lemoji = reaction.emoji
+                    print(self.lemoji)
                 self.l = reaction.countw
         if not any(":w_:" in str(reaction.emoji) for reaction in message.reactions):
             self.w = 0
@@ -79,21 +81,21 @@ class wlboard(commands.Cog):
                         if message.content == mes.embeds[0].to_dict()["fields"][0]["value"]:
                             if self.w > 0:
                                 await mes.edit(
-                                    content=f"**{self.w}** {self.wemoji} | **{self.l}** :l_:  | {channel.mention}",
+                                    content=f"**{self.w}** {self.wemoji} | **{self.l}** {self.lemoji}  | {channel.mention}",
                                     embed=embed)
                                 break
                             else:
                                 await mes.edit(
-                                    content=f"**{self.l}** :l_:  | {channel.mention}",
+                                    content=f"**{self.l}** {self.lemoji}  | {channel.mention}",
                                     embed=embed)
                                 break
                 if self.w > 0:
                     await channelData.send(
-                        content=f"**{self.w}** {self.wemoji} | **{self.l}** :l_:  | {channel.mention}",
+                        content=f"**{self.w}** {self.wemoji} | **{self.l}** {self.lemoji}  | {channel.mention}",
                         embed=embed)
                 else:
                     await channelData.send(
-                        content=f"**{self.l}** :l_:  | {channel.mention}",
+                        content=f"**{self.l}** {self.lemoji}  | {channel.mention}",
                         embed=embed)
 
             elif self.w - self.l > 0 and self.w >= wlLimit:
@@ -110,7 +112,7 @@ class wlboard(commands.Cog):
                         if message.content == mes.embeds[0].to_dict()["fields"][0]["value"]:
                             if self.l > 0:
                                 await mes.edit(
-                                    content=f"**{self.w}** {self.wemoji} | **{self.l}** :l_:  | {channel.mention}",
+                                    content=f"**{self.w}** {self.wemoji} | **{self.l}** {self.lemoji}  | {channel.mention}",
                                     embed=embed)
                                 break
                             else:
@@ -120,7 +122,7 @@ class wlboard(commands.Cog):
                                 break
                 if self.l > 0:
                     await channelData.send(
-                        content=f"**{self.w}** {self.wemoji} | **{self.l}** :l_:  | {channel.mention}",
+                        content=f"**{self.w}** {self.wemoji} | **{self.l}** {self.lemoji}  | {channel.mention}",
                         embed=embed)
                 else:
                     await channelData.send(
@@ -139,7 +141,7 @@ class wlboard(commands.Cog):
                 async for mes in channelData.history(limit=200):
                     if message.content == mes.embeds[0].to_dict()["fields"][0]["value"]:
                         await mes.edit(
-                            content=f"**{self.w}** {self.wemoji} | **{self.l}** :l_:  | {channel.mention}",
+                            content=f"**{self.w}** {self.wemoji} | **{self.l}** {self.lemoji}  | {channel.mention}",
                             embed=embed)
 
     @commands.Cog.listener()
@@ -197,7 +199,7 @@ class wlboard(commands.Cog):
                             break
                         else:
                             await mes.edit(
-                                content=f"**{self.l}** :l_:  | {channel.mention}",
+                                content=f"**{self.l}** {self.lemoji}  | {channel.mention}",
                                 embed=embed)
                             break
 
@@ -215,7 +217,7 @@ class wlboard(commands.Cog):
                     if message.content == mes.embeds[0].to_dict()["fields"][0]["value"]:
                         if self.l > 0:
                             await mes.edit(
-                                content=f"**{self.w}** {self.wemoji} | **{self.l}** :l_:  | {channel.mention}",
+                                content=f"**{self.w}** {self.wemoji} | **{self.l}** {self.lemoji}  | {channel.mention}",
                                 embed=embed)
                             break
                         else:
@@ -236,7 +238,7 @@ class wlboard(commands.Cog):
             async for mes in channelData.history(limit=200):
                 if message.content == mes.embeds[0].to_dict()["fields"][0]["value"]:
                     await mes.edit(
-                        content=f"**{self.w}** {self.wemoji} | **{self.l}** :l_:  | {channel.mention}",
+                        content=f"**{self.w}** {self.wemoji} | **{self.l}** {self.lemoji}  | {channel.mention}",
                         embed=embed)
 
     @commands.group(pass_context=True)

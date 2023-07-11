@@ -45,6 +45,12 @@ class wlboard(commands.Cog):
             await cursor.execute("SELECT channel FROM wlSetup WHERE guild = ?", (guild.id,))
             self.channel = await cursor.fetchone()
 
+    async def get_message(self, message, channelData):
+        async for mes in channelData.history(limit=200):
+            if len(mes.embeds) > 0:
+                if message.content == mes.embeds[0].to_dict()["fields"][0]["value"]:
+                    return mes
+
     @commands.Cog.listener()
     async def on_ready(self):
         print("Ready")
@@ -53,7 +59,6 @@ class wlboard(commands.Cog):
         async with self.bot.db.cursor() as cursor:
             await cursor.execute("CREATE TABLE IF NOT EXISTS wlSetup (wlLimit INTEGER, channel INTEGER, guild INTEGER)")
         await self.bot.db.commit()
-
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
@@ -68,32 +73,28 @@ class wlboard(commands.Cog):
         self.set_reactionCount(message)
 
         if ":w_" in str(payload.emoji) or ":l_" in str(payload.emoji):
-            if self.w - self.l < 0 and self.l >= wlLimit:
+            if self.w - self.l < 0 and self.l >= wlLimit:  # If it is an L and the limit is reached
                 embed = discord.Embed(title="", color=0xf1415f,
                                       timestamp=message.created_at)
                 embed.set_author(name=message.author.display_name, icon_url=User.avatar, url=message.jump_url)
                 fields = [("", message.content, False)]
-
                 for name, value, inline in fields:
                     embed.add_field(name=name, value=value, inline=inline)
-
                 if len(message.attachments):
                     embed.set_image(url=message.attachments[0].url)
 
-                async for mes in channelData.history(limit=200):
-                    if len(mes.embeds) > 0:
-                        if message.content == mes.embeds[0].to_dict()["fields"][0]["value"]:
-                            if self.w > 0:
-                                await mes.edit(
-                                    content=f"**{self.w}** {self.wemoji} | **{self.l}** {self.lemoji} | {channel.mention}",
-                                    embed=embed)
-                                break
-                            else:
-                                await mes.edit(
-                                    content=f"**{self.l}** {self.lemoji}  | {channel.mention}",
-                                    embed=embed)
-                                break
-                if self.w > 0:
+                mes = await self.get_message(message, channelData)
+                print(mes)
+                if mes is not None:
+                    if self.w > 0:
+                        await mes.edit(
+                            content=f"**{self.w}** {self.wemoji} | **{self.l}** {self.lemoji} | {channel.mention}",
+                            embed=embed)
+                    else:
+                        await mes.edit(
+                            content=f"**{self.l}** {self.lemoji}  | {channel.mention}",
+                            embed=embed)
+                elif self.w > 0:
                     await channelData.send(
                         content=f"**{self.w}** {self.wemoji} | **{self.l}** {self.lemoji}  | {channel.mention}",
                         embed=embed)
@@ -102,7 +103,7 @@ class wlboard(commands.Cog):
                         content=f"**{self.l}** {self.lemoji}  | {channel.mention}",
                         embed=embed)
 
-            elif self.w - self.l > 0 and self.w >= wlLimit:
+            elif self.w - self.l > 0 and self.w >= wlLimit: # If it is a W and the limit is reached
                 embed = discord.Embed(title="", color=0x5dac61,
                                       timestamp=message.created_at)
                 embed.set_author(name=message.author.display_name, icon_url=User.avatar, url=message.jump_url)
@@ -111,20 +112,19 @@ class wlboard(commands.Cog):
                     embed.add_field(name=name, value=value, inline=inline)
                 if len(message.attachments):
                     embed.set_image(url=message.attachments[0].url)
-                async for mes in channelData.history(limit=200):
-                    if len(mes.embeds) > 0:
-                        if message.content == mes.embeds[0].to_dict()["fields"][0]["value"]:
-                            if self.l > 0:
-                                await mes.edit(
-                                    content=f"**{self.w}** {self.wemoji} | **{self.l}** {self.lemoji}  | {channel.mention}",
-                                    embed=embed)
-                                break
-                            else:
-                                await mes.edit(
-                                    content=f"**{self.l}** {self.wemoji}  | {channel.mention}",
-                                    embed=embed)
-                                break
-                if self.l > 0:
+
+                mes = await self.get_message(message, channelData)
+                print(mes)
+                if mes is not None:
+                    if self.l > 0:
+                        await mes.edit(
+                            content=f"**{self.w}** {self.wemoji} | **{self.l}** {self.lemoji}  | {channel.mention}",
+                            embed=embed)
+                    else:
+                        await mes.edit(
+                            content=f"**{self.w}** {self.wemoji}  | {channel.mention}",
+                            embed=embed)
+                elif self.l > 0:
                     await channelData.send(
                         content=f"**{self.w}** {self.wemoji} | **{self.l}** {self.lemoji}  | {channel.mention}",
                         embed=embed)
@@ -142,30 +142,37 @@ class wlboard(commands.Cog):
                     embed.add_field(name=name, value=value, inline=inline)
                 if len(message.attachments):
                     embed.set_image(url=message.attachments[0].url)
-                async for mes in channelData.history(limit=200):
-                    if message.content == mes.embeds[0].to_dict()["fields"][0]["value"]:
-                        await mes.edit(
-                            content=f"**{self.w}** {self.wemoji} | **{self.l}** {self.lemoji}  | {channel.mention}",
-                            embed=embed)
+
+                mes = await self.get_message(message, channelData)
+                print(mes)
+                if mes is not None:
+                    await mes.edit(
+                        content=f"**{self.w}** {self.wemoji} | **{self.l}** {self.lemoji}  | {channel.mention}",
+                        embed=embed)
+                else:
+                    await channelData.send(
+                        content=f"**{self.w}** {self.wemoji} | **{self.l}** {self.lemoji}  | {channel.mention}",
+                        embed=embed)
 
     @commands.Cog.listener()
     async def on_raw_reaction_remove(self, payload):
         guild = self.bot.get_guild(payload.guild_id)
+        await self.get_limit_channel(guild)
         channel = guild.get_channel(payload.channel_id)
         message = await channel.fetch_message(payload.message_id)
         User = await self.bot.fetch_user(message.author.id)
         print("Reaction Removed")
         wlLimit = self.wlLimit[0]
-        channelData = guild.get_channel(self.channelTest[0])
+        channelData = guild.get_channel(self.channel[0])
         self.set_reactionCount(message)
 
         if self.w == 0 and self.l == 0:
-            async for mes in channelData.history(limit=200):
-                if len(mes.embeds) > 0:
-                    if message.content == mes.embeds[0].to_dict()["fields"][0]["value"]:
-                        await mes.delete()
-                        break
-        elif self.w - self.l < 0 and self.l >= wlLimit:
+            mes = await self.get_message(message, channelData)
+            print(mes)
+            if mes is not None:
+                await mes.delete()
+                return
+        elif self.w - self.l < 0 and self.l >= wlLimit: # If it is an L and the limit is reached
             embed = discord.Embed(title="", color=0xf1415f,
                                   timestamp=message.created_at)
             embed.set_author(name=message.author.display_name, icon_url=User.avatar, url=message.jump_url)
@@ -177,21 +184,19 @@ class wlboard(commands.Cog):
             if len(message.attachments):
                 embed.set_image(url=message.attachments[0].url)
 
-            async for mes in channelData.history(limit=200):
-                if len(mes.embeds) > 0:
-                    if message.content == mes.embeds[0].to_dict()["fields"][0]["value"]:
-                        if self.w > 0:
-                            await mes.edit(
-                                content=f"**{self.w}** {self.wemoji} | **{self.l}** {self.lemoji}  | {channel.mention}",
-                                embed=embed)
-                            break
-                        else:
-                            await mes.edit(
-                                content=f"**{self.l}** :l_:  | {channel.mention}",
-                                embed=embed)
-                            break
+            mes = await self.get_message(message, channelData)
+            print(mes)
+            if mes is not None:
+                if self.w > 0:
+                    await mes.edit(
+                        content=f"**{self.w}** {self.wemoji} | **{self.l}** {self.lemoji}  | {channel.mention}",
+                        embed=embed)
+                else:
+                    await mes.edit(
+                        content=f"**{self.l}** {self.lemoji}  | {channel.mention}",
+                        embed=embed)
 
-        elif self.w - self.l > 0 and self.w >= wlLimit:
+        elif self.w - self.l > 0 and self.w >= wlLimit: # If it is a W and the limit is reached
             embed = discord.Embed(title="", color=0x5dac61,
                                   timestamp=message.created_at)
             embed.set_author(name=message.author.display_name, icon_url=User.avatar, url=message.jump_url)
@@ -200,19 +205,18 @@ class wlboard(commands.Cog):
                 embed.add_field(name=name, value=value, inline=inline)
             if len(message.attachments):
                 embed.set_image(url=message.attachments[0].url)
-            async for mes in channelData.history(limit=200):
-                if len(mes.embeds) > 0:
-                    if message.content == mes.embeds[0].to_dict()["fields"][0]["value"]:
-                        if self.l > 0:
-                            await mes.edit(
-                                content=f"**{self.w}** {self.wemoji} | **{self.l}** {self.lemoji}  | {channel.mention}",
-                                embed=embed)
-                            break
-                        else:
-                            await mes.edit(
-                                content=f"**{self.l}** {self.wemoji}  | {channel.mention}",
-                                embed=embed)
-                            break
+
+            mes = await self.get_message(message, channelData)
+            print(mes)
+            if mes is not None:
+                if self.l > 0:
+                    await mes.edit(
+                        content=f"**{self.w}** {self.wemoji} | **{self.l}** {self.lemoji}  | {channel.mention}",
+                        embed=embed)
+                else:
+                    await mes.edit(
+                        content=f"**{self.w}** {self.wemoji}  | {channel.mention}",
+                        embed=embed)
 
         elif self.w - self.l == 0 and self.w != 0:
             embed = discord.Embed(title="", color=discord.Color.light_grey(),
@@ -223,11 +227,13 @@ class wlboard(commands.Cog):
                 embed.add_field(name=name, value=value, inline=inline)
             if len(message.attachments):
                 embed.set_image(url=message.attachments[0].url)
-            async for mes in channelData.history(limit=200):
-                if message.content == mes.embeds[0].to_dict()["fields"][0]["value"]:
-                    await mes.edit(
-                        content=f"**{self.w}** {self.wemoji} | **{self.l}** {self.lemoji}  | {channel.mention}",
-                        embed=embed)
+
+            mes = await self.get_message(message, channelData)
+            print(mes)
+            if mes is not None:
+                await mes.edit(
+                    content=f"**{self.w}** {self.wemoji} | **{self.l}** {self.lemoji}  | {channel.mention}",
+                    embed=embed)
 
     @commands.group(pass_context=True)
     async def setup(self, ctx):

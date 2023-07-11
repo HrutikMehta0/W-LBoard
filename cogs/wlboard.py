@@ -17,13 +17,33 @@ class wlboard(commands.Cog):
         self.l = 0
         self.wemoji = None
         self.lemoji = None
+        self.wlLimit = 0
+        self.channel = None
 
-    async def checkMessageExists(self, channelData, message):
-        async for mes in channelData.history(limit=200):
-            if len(mes.embeds) > 0:
-                if message.content == mes.embeds[0].to_dict()["fields"][0]["value"]:
-                    return True
-        return False
+    def set_reactionCount(self, message):
+        for reaction in message.reactions:
+            if ":w_:" in str(reaction.emoji):
+                print(self.wemoji)
+                if self.wemoji is None:
+                    self.wemoji = reaction.emoji
+                self.w = reaction.count
+                print(reaction.count)
+            elif ":l_:" in str(reaction.emoji):
+                if self.lemoji is None:
+                    self.lemoji = reaction.emoji
+                self.l = reaction.count
+                print(reaction.count)
+        if not any(":w_:" in str(reaction.emoji) for reaction in message.reactions):
+            self.w = 0
+        if not any(":l_:" in str(reaction.emoji) for reaction in message.reactions):
+            self.l = 0
+
+    async def get_limit_channel(self, guild):
+        async with self.bot.db.cursor() as cursor:
+            await cursor.execute("SELECT wlLimit FROM wlSetup WHERE guild = ?", (guild.id,))
+            self.wlLimit = await cursor.fetchone()
+            await cursor.execute("SELECT channel FROM wlSetup WHERE guild = ?", (guild.id,))
+            self.channel = await cursor.fetchone()
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -34,35 +54,19 @@ class wlboard(commands.Cog):
             await cursor.execute("CREATE TABLE IF NOT EXISTS wlSetup (wlLimit INTEGER, channel INTEGER, guild INTEGER)")
         await self.bot.db.commit()
 
+
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
         guild = self.bot.get_guild(payload.guild_id)
+        await self.get_limit_channel(guild)
         channel = guild.get_channel(payload.channel_id)
         message = await channel.fetch_message(payload.message_id)
         User = await self.bot.fetch_user(message.author.id)
         print("Reaction Added")
-        async with self.bot.db.cursor() as cursor:
-            await cursor.execute("SELECT wlLimit FROM wlSetup WHERE guild = ?", (guild.id,))
-            wlLimit = await cursor.fetchone()
-            await cursor.execute("SELECT channel FROM wlSetup WHERE guild = ?", (guild.id,))
-            channelTest = await cursor.fetchone()
-        wlLimit = wlLimit[0]
-        channelData = guild.get_channel(channelTest[0])
-        for reaction in message.reactions:
-            if ":w_:" in str(reaction.emoji):
-                if self.wemoji is None:
-                    self.wemoji = reaction.emoji
-                    print(self.wemoji)
-                self.w = reaction.count
-            elif ":l_:" in str(reaction.emoji):
-                if self.lemoji is None:
-                    self.lemoji = reaction.emoji
-                    print(self.lemoji)
-                self.l = reaction.countw
-        if not any(":w_:" in str(reaction.emoji) for reaction in message.reactions):
-            self.w = 0
-        if not any(":l_:" in str(reaction.emoji) for reaction in message.reactions):
-            self.l = 0
+        wlLimit = self.wlLimit[0]
+        channelData = guild.get_channel(self.channel[0])
+        self.set_reactionCount(message)
+
         if ":w_" in str(payload.emoji) or ":l_" in str(payload.emoji):
             if self.w - self.l < 0 and self.l >= wlLimit:
                 embed = discord.Embed(title="", color=0xf1415f,
@@ -81,7 +85,7 @@ class wlboard(commands.Cog):
                         if message.content == mes.embeds[0].to_dict()["fields"][0]["value"]:
                             if self.w > 0:
                                 await mes.edit(
-                                    content=f"**{self.w}** {self.wemoji} | **{self.l}** {self.lemoji}  | {channel.mention}",
+                                    content=f"**{self.w}** {self.wemoji} | **{self.l}** {self.lemoji} | {channel.mention}",
                                     embed=embed)
                                 break
                             else:
@@ -150,27 +154,11 @@ class wlboard(commands.Cog):
         channel = guild.get_channel(payload.channel_id)
         message = await channel.fetch_message(payload.message_id)
         User = await self.bot.fetch_user(message.author.id)
-        print("Reaction Added")
-        async with self.bot.db.cursor() as cursor:
-            await cursor.execute("SELECT wlLimit FROM wlSetup WHERE guild = ?", (guild.id,))
-            wlLimit = await cursor.fetchone()
-            await cursor.execute("SELECT channel FROM wlSetup WHERE guild = ?", (guild.id,))
-            channelTest = await cursor.fetchone()
-        wlLimit = wlLimit[0]
-        channelData = guild.get_channel(channelTest[0])
-        for reaction in message.reactions:
-            if ":w_:" in str(reaction.emoji):
-                if self.wemoji is None:
-                    self.wemoji = reaction.emoji
-                self.w = reaction.count
-            elif ":l_:" in str(reaction.emoji):
-                if self.lemoji is None:
-                    self.lemoji = reaction.emoji
-                self.l = reaction.countw
-        if not any(":w_:" in str(reaction.emoji) for reaction in message.reactions):
-            self.w = 0
-        if not any(":l_:" in str(reaction.emoji) for reaction in message.reactions):
-            self.l = 0
+        print("Reaction Removed")
+        wlLimit = self.wlLimit[0]
+        channelData = guild.get_channel(self.channelTest[0])
+        self.set_reactionCount(message)
+
         if self.w == 0 and self.l == 0:
             async for mes in channelData.history(limit=200):
                 if len(mes.embeds) > 0:
@@ -199,7 +187,7 @@ class wlboard(commands.Cog):
                             break
                         else:
                             await mes.edit(
-                                content=f"**{self.l}** {self.lemoji}  | {channel.mention}",
+                                content=f"**{self.l}** :l_:  | {channel.mention}",
                                 embed=embed)
                             break
 

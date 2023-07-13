@@ -1,4 +1,6 @@
 import discord
+import requests as requests
+import re
 from discord import ButtonStyle
 from discord.ext import commands
 import aiosqlite
@@ -19,6 +21,17 @@ class wlboard(commands.Cog):
         self.lemoji = None
         self.wlLimit = 0
         self.channel = None
+
+    def get_gif_url(view_url):
+
+        # Get the page content
+        page_content = requests.get(view_url).text
+
+        # Regex to find the URL on the c.tenor.com domain that ends with .gif
+        regex = r"(?i)\b((https?://c[.]tenor[.]com/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))[.]gif)"
+
+        # Find and return the first match
+        return re.findall(regex, page_content)[0][0]
 
     def set_reactionCount(self, message):
         for reaction in message.reactions:
@@ -133,7 +146,7 @@ class wlboard(commands.Cog):
                         content=f"**{self.w}** {self.wemoji}  | {channel.mention}",
                         embed=embed)
 
-            elif self.w - self.l == 0 and self.w != 0:
+            elif self.w - self.l == 0 and self.w != 0 and self.w >= wlLimit: # If it is a W and the limit is reached
                 embed = discord.Embed(title="", color=discord.Color.light_grey(),
                                       timestamp=message.created_at)
                 embed.set_author(name=message.author.display_name, icon_url=User.avatar, url=message.jump_url)

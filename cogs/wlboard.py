@@ -7,11 +7,6 @@ import aiosqlite
 import asyncio
 
 
-class messageLinkButton(discord.ui.Button):
-    def __init__(self, url):
-        super().__init__(style=discord.ButtonStyle.link, url=url, label="Message Link")
-
-
 class wlboard(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -71,6 +66,8 @@ class wlboard(commands.Cog):
         await asyncio.sleep(2)
         async with self.bot.db.cursor() as cursor:
             await cursor.execute("CREATE TABLE IF NOT EXISTS wlSetup (wlLimit INTEGER, channel INTEGER, guild INTEGER)")
+            await cursor.execute(
+                "CREATE TABLE IF NOT EXISTS tourneyList (album varchar(255), artist varchar(255), userID INTEGER, guild INTEGER)")
         await self.bot.db.commit()
 
     @commands.Cog.listener()
@@ -116,7 +113,7 @@ class wlboard(commands.Cog):
                         content=f"**{self.l}** {self.lemoji}  | {channel.mention}",
                         embed=embed)
 
-            elif self.w - self.l > 0 and self.w >= wlLimit: # If it is a W and the limit is reached
+            elif self.w - self.l > 0 and self.w >= wlLimit:  # If it is a W and the limit is reached
                 embed = discord.Embed(title="", color=0x5dac61,
                                       timestamp=message.created_at)
                 embed.set_author(name=message.author.display_name, icon_url=User.avatar, url=message.jump_url)
@@ -146,7 +143,7 @@ class wlboard(commands.Cog):
                         content=f"**{self.w}** {self.wemoji}  | {channel.mention}",
                         embed=embed)
 
-            elif self.w - self.l == 0 and self.w != 0 and self.w >= wlLimit: # If it is a W and the limit is reached
+            elif self.w - self.l == 0 and self.w != 0 and self.w >= wlLimit:  # If it is a W and the limit is reached
                 embed = discord.Embed(title="", color=discord.Color.light_grey(),
                                       timestamp=message.created_at)
                 embed.set_author(name=message.author.display_name, icon_url=User.avatar, url=message.jump_url)
@@ -185,7 +182,7 @@ class wlboard(commands.Cog):
             if mes is not None:
                 await mes.delete()
                 return
-        elif self.w - self.l < 0 and self.l >= wlLimit: # If it is an L and the limit is reached
+        elif self.w - self.l < 0 and self.l >= wlLimit:  # If it is an L and the limit is reached
             embed = discord.Embed(title="", color=0xf1415f,
                                   timestamp=message.created_at)
             embed.set_author(name=message.author.display_name, icon_url=User.avatar, url=message.jump_url)
@@ -209,7 +206,7 @@ class wlboard(commands.Cog):
                         content=f"**{self.l}** {self.lemoji}  | {channel.mention}",
                         embed=embed)
 
-        elif self.w - self.l > 0 and self.w >= wlLimit: # If it is a W and the limit is reached
+        elif self.w - self.l > 0 and self.w >= wlLimit:  # If it is a W and the limit is reached
             embed = discord.Embed(title="", color=0x5dac61,
                                   timestamp=message.created_at)
             embed.set_author(name=message.author.display_name, icon_url=User.avatar, url=message.jump_url)
@@ -291,6 +288,29 @@ class wlboard(commands.Cog):
     @commands.command()
     async def ping(self, ctx):
         await ctx.send("Hello")
+
+    @commands.command()
+    async def add(self, ctx, *args):
+        if len(args) > 2:
+            await ctx.send(f"Expect only 2 parameters album artist")
+        else:
+            async with self.bot.db.cursor() as cursor:
+                await cursor.execute("SELECT author FROM tourneyList WHERE guild = ?", (ctx.guild.id,))
+                tourneyData = await cursor.fetchone()
+                if tourneyData:
+                    print(tourneyData)
+                    tourneyData = tourneyData[0]
+                    # if tourneyData == wl:
+                    #     return await ctx.send(f"This {tourneyData} is already the WL Limit")
+                    # await cursor.execute("UPDATE wlSetup SET wlLimit = ? WHERE guild = ?", (wl, ctx.guild.id))
+                    # await ctx.send(f"Set WL Limit to {wl}")
+                else:
+                    print('Test')
+                    await cursor.execute("INSERT INTO tourneyList VALUES (?, ?, ?, ?)",
+                                         (args[0], args[1], ctx.message.author.id, ctx.guild.id))
+                    await ctx.send(f"Inserted {args[0]} by {args[1]}. User sent: {self.bot.get_user(ctx.message.author.id)}")
+
+            await self.bot.db.commit()
 
 
 async def setup(bot):

@@ -5,6 +5,8 @@ from discord import ButtonStyle
 from discord.ext import commands
 import aiosqlite
 import asyncio
+from datetime import datetime
+import schedule
 
 
 class wlboard(commands.Cog):
@@ -67,7 +69,7 @@ class wlboard(commands.Cog):
         async with self.bot.db.cursor() as cursor:
             await cursor.execute("CREATE TABLE IF NOT EXISTS wlSetup (wlLimit INTEGER, channel INTEGER, guild INTEGER)")
             await cursor.execute(
-                "CREATE TABLE IF NOT EXISTS tourneyList (album VARCHAR(255), artist VARCHAR(255), userID INTEGER, guild INTEGER)")
+                "CREATE TABLE IF NOT EXISTS tourneyList (bracketName VARCHAR(255), bracketLink VARCHAR(255),bracketDate VARCHAR(255), guild INTEGER)")
         await self.bot.db.commit()
 
     @commands.Cog.listener()
@@ -289,25 +291,54 @@ class wlboard(commands.Cog):
     async def ping(self, ctx):
         await ctx.send("Hello")
 
+    async def tourney(self):
+        async with self.bot.db.cursor() as cursor:
+            await cursor.execute("SELECT * FROM tourneyList")
+            tourneyData = await cursor.fetchall()
+            for tourney in tourneyData:
+                print(tourney)
+                datetime_obj = datetime.strptime(tourney[2], '%d/%m/%Y 17:00')
+                if datetime_obj < datetime.now():
+                    await cursor.execute("DELETE FROM tourneyList WHERE bracketName = ?", (tourney[0],))
+                    await self.bot.db.commit()
+                    continue
+                await cursor.execute("SELECT channel FROM wlSetup WHERE guild = ?", (tourney[3],))
+                channelData = await cursor.fetchone()
+                channel = self.bot.get_channel(channelData[0])
+                await channel.send(f"{tourney[0]} is starting in 1 hour at {tourney[2]}")
+                await self.bot.db.commit()
     @commands.command()
     async def add(self, ctx, *args):
-        if len(args) > 2:
-            await ctx.send(f"Expect only 2 parameters album artist")
+        if len(args) > 3:
+            await ctx.send(f"Expect only 3 parameters album artist")
+        elif len(args) < 3:
+            await ctx.send(f"Expect 3 parameters album artist")
         else:
             async with self.bot.db.cursor() as cursor:
-                await cursor.execute("SELECT count(*) FROM tourneyList")
-                length = await cursor.fetchone()
-                if length[0] > 0:
-                    print(ctx.guild.id)
-                    await cursor.execute("SELECT album FROM tourneyList WHERE guild = ?", (ctx.guild.id))
-                    tourneyData = await cursor.fetchone()
-                    print(tourneyData)
-                else:
-                    print('Test')
-                    await cursor.execute("INSERT INTO tourneyList VALUES (?, ?, ?, ?)",
-                                         (args[0], args[1], ctx.message.author.id, ctx.guild.id))
-                    await ctx.send(f"Inserted {args[0]} by {args[1]}. User sent: {self.bot.get_user(ctx.message.author.id)}")
+                await cursor.execute("INSERT INTO tourneyList VALUES (?, ?, ?, ?)",
+                                     (args[0], args[1], args[2], ctx.guild.id))
+                await ctx.send(
+                    f"Inserted {args[0]} {args[1]} {args[2]}. User sent: {self.bot.get_user(ctx.message.author.id)}")
             await self.bot.db.commit()
+            datetime_obj = datetime.strptime(args[2], '%d/%m/%Y 17:00')
+
+
+
+    # @commands.command()
+    # async def tourneyChannel(self, ctx, channel: discord.TextChannel):
+    #     async with self.bot.db.cursor() as cursor:
+    #         await cursor.execute("SELECT channel FROM tourneyList WHERE guild = ?", (ctx.guild.id,))
+    #         channelData = await cursor.fetchone()
+    #         if channelData:
+    #             channelData = channelData[0]
+    #             if channelData == channel.id:
+    #                 return await ctx.send("This channel is already the WLBoard channel")
+    #             await cursor.execute("UPDATE tourneyList SET channel = ? WHERE guild = ?", (channel.id, ctx.guild.id))
+    #             await ctx.send(f"Updated WLBoard channel to {channel.mention}")
+    #         else:
+    #             await cursor.execute("INSERT INTO tourneyList VALUES (?, ?, ?)", (5, channel.id, ctx.guild.id))
+    #             await ctx.send(f"Set WLBoard channel to {channel.mention}")
+    #     await self.bot.db.commit()
 
 
 async def setup(bot):

@@ -20,9 +20,9 @@ async def load():
 
 async def main():
     await load()
-    with open('token.txt', 'r') as f:
-        lines = f.readlines()
-    await bot.start(lines[0])
+    #with open('token.txt', 'r') as f:
+     #   lines = f.readlines()
+    await bot.start()
     #await bot.start(os.environ['TOKEN']) # For Mac
 
 asyncio.run(main())

@@ -2,11 +2,10 @@ import discord
 import requests as requests
 import re
 from discord import ButtonStyle
-from discord.ext import commands
+from discord.ext import commands, tasks
 import aiosqlite
 import asyncio
-from datetime import datetime
-import schedule
+from datetime import datetime, timedelta
 
 
 class wlboard(commands.Cog):
@@ -18,6 +17,7 @@ class wlboard(commands.Cog):
         self.lemoji = None
         self.wlLimit = 0
         self.channel = None
+
 
     def get_gif_url(view_url):
 
@@ -291,22 +291,22 @@ class wlboard(commands.Cog):
     async def ping(self, ctx):
         await ctx.send("Hello")
 
-    async def tourney(self):
-        async with self.bot.db.cursor() as cursor:
-            await cursor.execute("SELECT * FROM tourneyList")
-            tourneyData = await cursor.fetchall()
-            for tourney in tourneyData:
-                print(tourney)
-                datetime_obj = datetime.strptime(tourney[2], '%d/%m/%Y 17:00')
-                if datetime_obj < datetime.now():
-                    await cursor.execute("DELETE FROM tourneyList WHERE bracketName = ?", (tourney[0],))
-                    await self.bot.db.commit()
-                    continue
-                await cursor.execute("SELECT channel FROM wlSetup WHERE guild = ?", (tourney[3],))
-                channelData = await cursor.fetchone()
-                channel = self.bot.get_channel(channelData[0])
-                await channel.send(f"{tourney[0]} is starting in 1 hour at {tourney[2]}")
-                await self.bot.db.commit()
+    @tasks.loop(days=1)
+    async def called_once_a_day(self):
+        message_channel = self.bot.get_channel(774440654465269781)
+        print(f"Got channel {message_channel}")
+        await message_channel.send("Your message")
+
+    @called_once_a_day.before_loop
+    async def before(self):
+        await self.bot.wait_until_ready()
+        print("Finished waiting")
+    @commands.command()
+    async def tourney(self, ctx):
+        self.called_once_a_day.start()
+
+
+
     @commands.command()
     async def add(self, ctx, *args):
         if len(args) > 3:
@@ -320,25 +320,19 @@ class wlboard(commands.Cog):
                 await ctx.send(
                     f"Inserted {args[0]} {args[1]} {args[2]}. User sent: {self.bot.get_user(ctx.message.author.id)}")
             await self.bot.db.commit()
-            datetime_obj = datetime.strptime(args[2], '%d/%m/%Y 17:00')
 
+    @commands.command()
+    async def delete(self, ctx, *args):
+        if len(args) > 1:
+            await ctx.send(f"Expect only 1 parameter album")
+        elif len(args) < 1:
+            await ctx.send(f"Expect 1 parameter album")
+        else:
+            async with self.bot.db.cursor() as cursor:
+                await cursor.execute("DELETE FROM tourneyList WHERE bracketName = ?", (args[0],))
+                await ctx.send(f"Deleted {args[0]}. User sent: {self.bot.get_user(ctx.message.author.id)}")
+            await self.bot.db.commit()
 
-
-    # @commands.command()
-    # async def tourneyChannel(self, ctx, channel: discord.TextChannel):
-    #     async with self.bot.db.cursor() as cursor:
-    #         await cursor.execute("SELECT channel FROM tourneyList WHERE guild = ?", (ctx.guild.id,))
-    #         channelData = await cursor.fetchone()
-    #         if channelData:
-    #             channelData = channelData[0]
-    #             if channelData == channel.id:
-    #                 return await ctx.send("This channel is already the WLBoard channel")
-    #             await cursor.execute("UPDATE tourneyList SET channel = ? WHERE guild = ?", (channel.id, ctx.guild.id))
-    #             await ctx.send(f"Updated WLBoard channel to {channel.mention}")
-    #         else:
-    #             await cursor.execute("INSERT INTO tourneyList VALUES (?, ?, ?)", (5, channel.id, ctx.guild.id))
-    #             await ctx.send(f"Set WLBoard channel to {channel.mention}")
-    #     await self.bot.db.commit()
 
 
 async def setup(bot):

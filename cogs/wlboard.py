@@ -6,6 +6,8 @@ from discord.ext import commands, tasks
 import aiosqlite
 import asyncio
 from datetime import datetime, timedelta
+from PIL import Image
+from io import BytesIO
 
 
 class wlboard(commands.Cog):
@@ -69,7 +71,7 @@ class wlboard(commands.Cog):
         async with self.bot.db.cursor() as cursor:
             await cursor.execute("CREATE TABLE IF NOT EXISTS wlSetup (wlLimit INTEGER, channel INTEGER, guild INTEGER)")
             await cursor.execute(
-                "CREATE TABLE IF NOT EXISTS tourneyList (bracketName VARCHAR(255), bracketLink VARCHAR(255),bracketDate VARCHAR(255), guild INTEGER)")
+                "CREATE TABLE IF NOT EXISTS tourneyList (number INTEGER, bracketName VARCHAR(255), bracketLink VARCHAR(255), guild INTEGER)")
         await self.bot.db.commit()
 
     @commands.Cog.listener()
@@ -291,11 +293,15 @@ class wlboard(commands.Cog):
     async def ping(self, ctx):
         await ctx.send("Hello")
 
-    @tasks.loop(days=1)
-    async def called_once_a_day(self):
+    @tasks.loop(seconds=30)
+    async def called_once_a_day(self, tourneyList):
+        if len(tourneyList) == 0:
+            return
         message_channel = self.bot.get_channel(774440654465269781)
         print(f"Got channel {message_channel}")
-        await message_channel.send("Your message")
+        await message_channel.send("<@&1200603742521807028>")
+        await message_channel.send(tourneyList.pop())
+
 
     @called_once_a_day.before_loop
     async def before(self):
@@ -303,7 +309,13 @@ class wlboard(commands.Cog):
         print("Finished waiting")
     @commands.command()
     async def tourney(self, ctx):
-        self.called_once_a_day.start()
+        await ctx.send("Hello")
+        i=1
+        async with self.bot.db.cursor() as cursor:
+            await cursor.execute("SELECT * FROM tourneyList WHERE guild = ?", (546243371602149406,))
+            tourneyList = await cursor.fetchall()
+            print(tourneyList)
+            self.called_once_a_day.start(tourneyList)
 
 
 
@@ -317,8 +329,9 @@ class wlboard(commands.Cog):
             async with self.bot.db.cursor() as cursor:
                 await cursor.execute("INSERT INTO tourneyList VALUES (?, ?, ?, ?)",
                                      (args[0], args[1], args[2], ctx.guild.id))
-                await ctx.send(
-                    f"Inserted {args[0]} {args[1]} {args[2]}. User sent: {self.bot.get_user(ctx.message.author.id)}")
+                #await ctx.send(file=file, content=f"Inserted {args[0]} {args[1]}. User sent: {self.bot.get_user(ctx.message.author.id)}")
+                await ctx.send(f"Inserted {args[0]} {args[1]}")
+                #await ctx.send(f"{args[2]}")
             await self.bot.db.commit()
 
     @commands.command()
